@@ -298,8 +298,8 @@ fn string_to_morse_values(s: &str) -> Result<Vec<MorseValue>> {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    if args.len() != 2 {
-        eprintln!("Usage: {} <led_name>\n", args.first().unwrap());
+    if args.len() < 3 {
+        eprintln!("Usage: {} <led_name> <message>\n", args.first().unwrap());
         print_leds_available().expect("Error listing leds");
         std::process::exit(1);
     }
@@ -317,7 +317,9 @@ fn main() {
 
     let led = Led::new(led_name).expect("Error creating Led");
 
-    let values = string_to_morse_values("SOS").expect("Error parsing message");
+    let message = args.clone().split_off(2).join(" ");
+
+    let values = string_to_morse_values(&message).expect("Error parsing message");
     let elements = morse_values_to_elements(values);
     let signals = morse_elements_to_signals(elements);
 
