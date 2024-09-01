@@ -62,6 +62,17 @@ pub enum MorseValue {
     Seven,
     Eight,
     Nine,
+    Period,
+    Comma,
+    Question,
+    Apostrophe,
+    Quotation,
+    Hyphen,
+    Slash,
+    OpenParenthesis,
+    CloseParenthesis,
+    At,
+    Colon,
 }
 
 impl MorseValue {
@@ -104,6 +115,17 @@ impl MorseValue {
             '7' => Ok(Seven),
             '8' => Ok(Eight),
             '9' => Ok(Nine),
+            '.' => Ok(Period),
+            ',' => Ok(Comma),
+            '?' => Ok(Question),
+            '\'' => Ok(Apostrophe),
+            '"' => Ok(Quotation),
+            '-' => Ok(Hyphen),
+            '/' => Ok(Slash),
+            '(' => Ok(OpenParenthesis),
+            ')' => Ok(CloseParenthesis),
+            '@' => Ok(At),
+            ':' => Ok(Colon),
             _ => Err(format!("Character not allowed: {}", c)),
         }
     }
@@ -147,6 +169,17 @@ impl MorseValue {
             Seven => vec![Dash, Dash, Dot, Dot, Dot],
             Eight => vec![Dash, Dash, Dash, Dot, Dot],
             Nine => vec![Dash, Dash, Dash, Dash, Dot],
+            Period => vec![Dot, Dash, Dot, Dash, Dot, Dash],
+            Comma => vec![Dash, Dash, Dot, Dot, Dash, Dash],
+            Question => vec![Dot, Dot, Dash, Dash, Dot, Dot],
+            Apostrophe => vec![Dot, Dash, Dash, Dash, Dash, Dot],
+            Quotation => vec![Dot, Dash, Dot, Dot, Dash, Dot],
+            Hyphen => vec![Dash, Dot, Dot, Dot, Dot, Dash],
+            Slash => vec![Dash, Dot, Dot, Dash, Dot],
+            OpenParenthesis => vec![Dash, Dot, Dash, Dash, Dot],
+            CloseParenthesis => vec![Dash, Dot, Dash, Dash, Dot, Dash],
+            At => vec![Dot, Dash, Dash, Dot, Dash, Dot],
+            Colon => vec![Dash, Dash, Dash, Dot, Dot, Dot],
         };
         let len = elements.len() * 2 - 1;
         elements
@@ -304,6 +337,22 @@ mod tests {
         assert_eq!(
             string_to_values("123 456"),
             Ok(vec![One, Two, Three, Space, Four, Five, Six])
+        );
+    }
+
+    #[test]
+    fn test_string_to_morse_symbols() {
+        assert_eq!(
+            string_to_values("hi('@')"),
+            Ok(vec![
+                H,
+                I,
+                OpenParenthesis,
+                Apostrophe,
+                At,
+                Apostrophe,
+                CloseParenthesis
+            ])
         );
     }
 

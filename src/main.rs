@@ -37,6 +37,6 @@ fn main() {
             MorseSignal::Off(d) => (false, d),
         };
         led.set_value(on).expect("Error setting brightness");
-        std::thread::sleep(std::time::Duration::from_millis(duration * 300));
+        std::thread::sleep(std::time::Duration::from_millis(duration * 120));
     }
 }
