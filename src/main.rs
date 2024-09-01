@@ -86,6 +86,168 @@ fn print_leds_available() -> Result<()> {
     Ok(())
 }
 
+#[derive(PartialEq, Debug)]
+enum MorseElement {
+    Dot,
+    Dash,
+    Gap,
+    LetterGap,
+    WordGap,
+}
+
+impl MorseElement {
+    fn length(&self) -> u64 {
+        match self {
+            MorseElement::Dot => 1,
+            MorseElement::Dash => 3,
+            MorseElement::Gap => 1,
+            MorseElement::LetterGap => 3,
+            MorseElement::WordGap => 1,
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+enum MorseValue {
+    Space,
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+    H,
+    I,
+    J,
+    K,
+    L,
+    M,
+    N,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
+}
+
+impl MorseValue {
+    fn to_morse_elements(&self) -> Vec<MorseElement> {
+        let elements = match self {
+            MorseValue::Space => vec![MorseElement::WordGap],
+            MorseValue::A => vec![MorseElement::Dot, MorseElement::Dash],
+            MorseValue::B => vec![
+                MorseElement::Dash,
+                MorseElement::Dot,
+                MorseElement::Dot,
+                MorseElement::Dot,
+            ],
+            MorseValue::C => vec![
+                MorseElement::Dash,
+                MorseElement::Dot,
+                MorseElement::Dash,
+                MorseElement::Dot,
+            ],
+            MorseValue::D => vec![MorseElement::Dash, MorseElement::Dot, MorseElement::Dot],
+            MorseValue::E => vec![MorseElement::Dot],
+            MorseValue::F => vec![
+                MorseElement::Dot,
+                MorseElement::Dot,
+                MorseElement::Dash,
+                MorseElement::Dot,
+            ],
+            MorseValue::G => vec![MorseElement::Dash, MorseElement::Dash, MorseElement::Dot],
+            MorseValue::H => vec![
+                MorseElement::Dot,
+                MorseElement::Dot,
+                MorseElement::Dot,
+                MorseElement::Dot,
+            ],
+            MorseValue::I => vec![MorseElement::Dot, MorseElement::Dot],
+            MorseValue::J => vec![
+                MorseElement::Dot,
+                MorseElement::Dash,
+                MorseElement::Dash,
+                MorseElement::Dash,
+            ],
+            MorseValue::K => vec![MorseElement::Dash, MorseElement::Dot, MorseElement::Dash],
+            MorseValue::L => vec![
+                MorseElement::Dot,
+                MorseElement::Dash,
+                MorseElement::Dot,
+                MorseElement::Dot,
+            ],
+            MorseValue::M => vec![MorseElement::Dash, MorseElement::Dash],
+            MorseValue::N => vec![MorseElement::Dash, MorseElement::Dot],
+            MorseValue::O => vec![MorseElement::Dash, MorseElement::Dash, MorseElement::Dash],
+            MorseValue::P => vec![
+                MorseElement::Dot,
+                MorseElement::Dash,
+                MorseElement::Dash,
+                MorseElement::Dot,
+            ],
+            MorseValue::Q => vec![
+                MorseElement::Dash,
+                MorseElement::Dash,
+                MorseElement::Dot,
+                MorseElement::Dash,
+            ],
+            MorseValue::R => vec![MorseElement::Dot, MorseElement::Dash, MorseElement::Dot],
+            MorseValue::S => vec![MorseElement::Dot, MorseElement::Dot, MorseElement::Dot],
+            MorseValue::T => vec![MorseElement::Dash],
+            MorseValue::U => vec![MorseElement::Dot, MorseElement::Dot, MorseElement::Dash],
+            MorseValue::V => vec![
+                MorseElement::Dot,
+                MorseElement::Dot,
+                MorseElement::Dot,
+                MorseElement::Dash,
+            ],
+            MorseValue::W => vec![MorseElement::Dot, MorseElement::Dash, MorseElement::Dash],
+            MorseValue::X => vec![
+                MorseElement::Dash,
+                MorseElement::Dot,
+                MorseElement::Dot,
+                MorseElement::Dash,
+            ],
+            MorseValue::Y => vec![
+                MorseElement::Dash,
+                MorseElement::Dot,
+                MorseElement::Dash,
+                MorseElement::Dash,
+            ],
+            MorseValue::Z => vec![
+                MorseElement::Dash,
+                MorseElement::Dash,
+                MorseElement::Dot,
+                MorseElement::Dot,
+            ],
+        };
+        let len = elements.len() * 2 - 1;
+        elements
+            .into_iter()
+            .flat_map(|e| vec![e, MorseElement::Gap])
+            .take(len)
+            .collect::<Vec<MorseElement>>()
+    }
+}
+
+fn encode_morse_message(values: Vec<MorseValue>) -> Vec<MorseElement> {
+    let mut result = Vec::new();
+    for value in values {
+        result.extend(value.to_morse_elements());
+        result.push(MorseElement::LetterGap);
+    }
+    result.pop();
+    result
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
@@ -113,5 +275,46 @@ fn main() {
         led.set_value(value).expect("Error setting brightness");
         value = !value;
         std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_encode_morse_message_single_letter() {
+        assert_eq!(
+            encode_morse_message(vec![MorseValue::A]),
+            vec![MorseElement::Dot, MorseElement::Gap, MorseElement::Dash]
+        );
+    }
+
+    #[test]
+    fn test_encode_morse_message_two_letters() {
+        use MorseElement::*;
+        use MorseValue::*;
+        assert_eq!(
+            encode_morse_message(vec![H, I]),
+            vec![Dot, Gap, Dot, Gap, Dot, Gap, Dot, LetterGap, Dot, Gap, Dot]
+        );
+    }
+
+    #[test]
+    fn test_encode_morse_message_two_words() {
+        use MorseElement::*;
+        use MorseValue::*;
+
+        #[rustfmt::skip]
+        assert_eq!(
+            encode_morse_message(vec![H, I, Space, H, I]),
+            vec![
+                Dot, Gap, Dot, Gap, Dot, Gap, Dot, LetterGap,
+                Dot, Gap, Dot, LetterGap,
+                WordGap, LetterGap,
+                Dot, Gap, Dot, Gap, Dot, Gap, Dot, LetterGap,
+                Dot, Gap, Dot,
+            ],
+        );
     }
 }
