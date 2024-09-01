@@ -2,94 +2,11 @@ use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
+mod led;
+
 use MorseElement::*;
 use MorseSignal::*;
 use MorseValue::*;
-
-type Result<T> = std::result::Result<T, LedError>;
-
-#[derive(PartialEq, Debug)]
-enum LedError {
-    IoError(()),
-    ParseIntError(std::num::ParseIntError),
-    MorseParseError(String),
-}
-
-impl From<io::Error> for LedError {
-    fn from(_error: io::Error) -> Self {
-        LedError::IoError(())
-    }
-}
-
-impl From<std::num::ParseIntError> for LedError {
-    fn from(error: std::num::ParseIntError) -> Self {
-        LedError::ParseIntError(error)
-    }
-}
-
-struct Led {
-    max_brightness: u32,
-    brightness_path: PathBuf,
-    max_brightness_path: PathBuf,
-}
-
-impl Led {
-    fn new(name: &str) -> Result<Led> {
-        let base = Path::new("/sys/class/leds/");
-
-        let led_dir = base.join(name);
-        let brightness_path = led_dir.join("brightness");
-        let max_brightness_path = led_dir.join("max_brightness");
-
-        println!("Using {}", led_dir.display());
-
-        let mut led = Led {
-            max_brightness: 0,
-            brightness_path,
-            max_brightness_path,
-        };
-
-        led.set_max_brightness()?;
-        Ok(led)
-    }
-
-    fn set_max_brightness(&mut self) -> Result<()> {
-        let line = fs::read_to_string(self.max_brightness_path.clone())?;
-        self.max_brightness = line.trim().parse()?;
-        Ok(())
-    }
-
-    fn set_brightness(&self, brightness: u32) -> Result<()> {
-        let mut file = File::create(self.brightness_path.clone())?;
-        let brightness_str = brightness.to_string();
-        file.write_all(brightness_str.as_bytes())?;
-        Ok(())
-    }
-
-    fn set_value(&self, on: bool) -> Result<()> {
-        self.set_brightness(if on { self.max_brightness } else { 0 })
-    }
-}
-
-fn get_led_names() -> Result<Vec<String>> {
-    let mut result = Vec::new();
-    let paths = fs::read_dir("/sys/class/leds/")?;
-    for path in paths {
-        let path = path?.file_name();
-        let path_str = path.to_str().unwrap();
-        result.push(path_str.to_owned());
-    }
-    result.sort();
-    Ok(result)
-}
-
-fn print_leds_available() -> Result<()> {
-    eprintln!("Leds available:\n");
-    for led in get_led_names()? {
-        eprintln!("    {}", led);
-    }
-    Ok(())
-}
 
 #[derive(PartialEq, Debug)]
 enum MorseElement {
@@ -154,7 +71,7 @@ enum MorseValue {
 }
 
 impl MorseValue {
-    fn from(c: char) -> Result<Self> {
+    fn from(c: char) -> led::Result<Self> {
         match c.to_ascii_uppercase() {
             ' ' => Ok(Space),
             'A' => Ok(A),
@@ -193,7 +110,7 @@ impl MorseValue {
             '7' => Ok(Seven),
             '8' => Ok(Eight),
             '9' => Ok(Nine),
-            _ => Err(LedError::MorseParseError(format!(
+            _ => Err(led::LedError::MorseParseError(format!(
                 "Character not allowed: {}",
                 c
             ))),
@@ -291,7 +208,7 @@ fn morse_elements_to_signals(elements: Vec<MorseElement>) -> Vec<MorseSignal> {
     signals
 }
 
-fn string_to_morse_values(s: &str) -> Result<Vec<MorseValue>> {
+fn string_to_morse_values(s: &str) -> led::Result<Vec<MorseValue>> {
     s.chars().map(MorseValue::from).collect()
 }
 
@@ -300,22 +217,22 @@ fn main() {
 
     if args.len() < 3 {
         eprintln!("Usage: {} <led_name> <message>\n", args.first().unwrap());
-        print_leds_available().expect("Error listing leds");
+        led::print_leds_available().expect("Error listing leds");
         std::process::exit(1);
     }
 
     let led_name = args.get(1).unwrap();
 
-    if !get_led_names()
+    if !led::get_led_names()
         .expect("Error listing leds")
         .contains(led_name)
     {
         eprintln!("Error: led {} not found\n", led_name);
-        print_leds_available().expect("Error listing leds");
+        led::print_leds_available().expect("Error listing leds");
         std::process::exit(1);
     }
 
-    let led = Led::new(led_name).expect("Error creating Led");
+    let led = led::Led::new(led_name).expect("Error creating Led");
 
     let message = args.clone().split_off(2).join(" ");
 
@@ -441,7 +358,7 @@ mod tests {
     fn test_string_to_morse_values_error() {
         assert_eq!(
             string_to_morse_values("SoS£"),
-            Err(LedError::MorseParseError(
+            Err(led::LedError::MorseParseError(
                 "Character not allowed: £".to_string()
             ))
         );
