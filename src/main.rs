@@ -1,5 +1,6 @@
-use std::fs::File;
-use std::io::{self, BufRead, Write};
+use std::fs::{self, File};
+use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 
 type Result<T> = std::result::Result<T, LedError>;
 
@@ -23,32 +24,38 @@ impl From<std::num::ParseIntError> for LedError {
 
 struct Led {
     max_brightness: u32,
-    path: String,
+    brightness_path: PathBuf,
+    max_brightness_path: PathBuf,
 }
 
 impl Led {
-    fn new(path: &str) -> Result<Led> {
+    fn new(name: &str) -> Result<Led> {
+        let base = Path::new("/sys/class/leds/");
+
+        let led_dir = base.join(name);
+        let brightness_path = led_dir.join("brightness");
+        let max_brightness_path = led_dir.join("max_brightness");
+
+        println!("Using {}", led_dir.display());
+
         let mut led = Led {
             max_brightness: 0,
-            path: path.to_owned(),
+            brightness_path,
+            max_brightness_path,
         };
 
         led.set_max_brightness()?;
-        println!("Max brightness: {}", led.max_brightness);
         Ok(led)
     }
 
     fn set_max_brightness(&mut self) -> Result<()> {
-        let file = File::open(self.path.to_owned() + "max_brightness")?;
-        let mut reader = io::BufReader::new(file);
-        let mut line = String::new();
-        reader.read_line(&mut line)?;
+        let line = fs::read_to_string(self.max_brightness_path.clone())?;
         self.max_brightness = line.trim().parse()?;
         Ok(())
     }
 
     fn set_brightness(&self, brightness: u32) -> Result<()> {
-        let mut file = File::create(self.path.clone() + "brightness")?;
+        let mut file = File::create(self.brightness_path.clone())?;
         let brightness_str = brightness.to_string();
         file.write_all(brightness_str.as_bytes())?;
         Ok(())
@@ -59,10 +66,47 @@ impl Led {
     }
 }
 
+fn get_led_names() -> Result<Vec<String>> {
+    let mut result = Vec::new();
+    let paths = fs::read_dir("/sys/class/leds/")?;
+    for path in paths {
+        let path = path?.file_name();
+        let path_str = path.to_str().unwrap();
+        result.push(path_str.to_owned());
+    }
+    result.sort();
+    Ok(result)
+}
+
+fn print_leds_available() -> Result<()> {
+    eprintln!("Leds available:\n");
+    for led in get_led_names()? {
+        eprintln!("    {}", led);
+    }
+    Ok(())
+}
+
 fn main() {
-    // let led_path = "/sys/class/leds/tpacpi::lid_logo_dot/";
-    let led_path = "/sys/class/leds/input0::capslock/";
-    let led = Led::new(led_path).expect("Error creating Led");
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() != 2 {
+        eprintln!("Usage: {} <led_name>\n", args.first().unwrap());
+        print_leds_available().expect("Error listing leds");
+        std::process::exit(1);
+    }
+
+    let led_name = args.get(1).unwrap();
+
+    if !get_led_names()
+        .expect("Error listing leds")
+        .contains(led_name)
+    {
+        eprintln!("Error: led {} not found\n", led_name);
+        print_leds_available().expect("Error listing leds");
+        std::process::exit(1);
+    }
+
+    let led = Led::new(led_name).expect("Error creating Led");
 
     let mut value = false;
     loop {
