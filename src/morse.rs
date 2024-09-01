@@ -1,5 +1,3 @@
-use crate::led;
-
 use MorseElement::*;
 use MorseSignal::*;
 use MorseValue::*;
@@ -67,7 +65,7 @@ pub enum MorseValue {
 }
 
 impl MorseValue {
-    pub fn from(c: char) -> led::Result<Self> {
+    pub fn from(c: char) -> Result<Self, String> {
         match c.to_ascii_uppercase() {
             ' ' => Ok(Space),
             'A' => Ok(A),
@@ -106,10 +104,7 @@ impl MorseValue {
             '7' => Ok(Seven),
             '8' => Ok(Eight),
             '9' => Ok(Nine),
-            _ => Err(led::LedError::MorseParseError(format!(
-                "Character not allowed: {}",
-                c
-            ))),
+            _ => Err(format!("Character not allowed: {}", c)),
         }
     }
 
@@ -162,7 +157,7 @@ impl MorseValue {
     }
 }
 
-pub fn morse_values_to_elements(values: Vec<MorseValue>) -> Vec<MorseElement> {
+pub fn values_to_elements(values: Vec<MorseValue>) -> Vec<MorseElement> {
     let mut result = Vec::new();
     for value in values {
         result.extend(value.to_morse_elements());
@@ -178,7 +173,7 @@ pub enum MorseSignal {
     Off(u64),
 }
 
-pub fn morse_elements_to_signals(elements: Vec<MorseElement>) -> Vec<MorseSignal> {
+pub fn elements_to_signals(elements: Vec<MorseElement>) -> Vec<MorseSignal> {
     let mut signals = Vec::new();
 
     let mut current_signal = On(0);
@@ -204,7 +199,7 @@ pub fn morse_elements_to_signals(elements: Vec<MorseElement>) -> Vec<MorseSignal
     signals
 }
 
-pub fn string_to_morse_values(s: &str) -> led::Result<Vec<MorseValue>> {
+pub fn string_to_values(s: &str) -> Result<Vec<MorseValue>, String> {
     s.chars().map(MorseValue::from).collect()
 }
 
@@ -215,7 +210,7 @@ mod tests {
     #[test]
     fn test_encode_morse_message_single_letter() {
         assert_eq!(
-            morse_values_to_elements(vec![MorseValue::A]),
+            values_to_elements(vec![MorseValue::A]),
             vec![MorseElement::Dot, MorseElement::Gap, MorseElement::Dash]
         );
     }
@@ -223,7 +218,7 @@ mod tests {
     #[test]
     fn test_encode_morse_message_two_letters() {
         assert_eq!(
-            morse_values_to_elements(vec![H, I]),
+            values_to_elements(vec![H, I]),
             vec![Dot, Gap, Dot, Gap, Dot, Gap, Dot, LetterGap, Dot, Gap, Dot]
         );
     }
@@ -232,7 +227,7 @@ mod tests {
     fn test_encode_morse_message_two_words() {
         #[rustfmt::skip]
         assert_eq!(
-            morse_values_to_elements(vec![H, I, Space, H, I]),
+            values_to_elements(vec![H, I, Space, H, I]),
             vec![
                 Dot, Gap, Dot, Gap, Dot, Gap, Dot, LetterGap,
                 Dot, Gap, Dot, LetterGap,
@@ -246,7 +241,7 @@ mod tests {
     #[test]
     fn test_encode_morse_message_two_letters_with_space() {
         assert_eq!(
-            morse_values_to_elements(vec![E, Space, T]),
+            values_to_elements(vec![E, Space, T]),
             vec![Dot, LetterGap, WordGap, LetterGap, Dash]
         );
     }
@@ -254,7 +249,7 @@ mod tests {
     #[test]
     fn test_morse_elements_to_signals() {
         assert_eq!(
-            morse_elements_to_signals(vec![Dot, Gap, Dash]),
+            elements_to_signals(vec![Dot, Gap, Dash]),
             vec![On(1), Off(1), On(3), Off(7)]
         );
     }
@@ -262,7 +257,7 @@ mod tests {
     #[test]
     fn test_morse_elements_to_signals_compact() {
         assert_eq!(
-            morse_elements_to_signals(vec![Dot, LetterGap, WordGap, LetterGap, Dash]),
+            elements_to_signals(vec![Dot, LetterGap, WordGap, LetterGap, Dash]),
             vec![On(1), Off(7), On(3), Off(7)]
         );
     }
@@ -271,7 +266,7 @@ mod tests {
     fn test_morse_elements_to_signals_multiple_words() {
         #[rustfmt::skip]
         assert_eq!(
-            morse_elements_to_signals(
+            elements_to_signals(
                 vec![
                     Dot, Gap, Dot, Gap, Dot, Gap, Dot, LetterGap,
                     Dot, Gap, Dot, LetterGap,
@@ -293,13 +288,13 @@ mod tests {
 
     #[test]
     fn test_string_to_morse_values() {
-        assert_eq!(string_to_morse_values("SOS"), Ok(vec![S, O, S]));
+        assert_eq!(string_to_values("SOS"), Ok(vec![S, O, S]));
     }
 
     #[test]
     fn test_string_to_morse_values_lower() {
         assert_eq!(
-            string_to_morse_values("sos sos"),
+            string_to_values("sos sos"),
             Ok(vec![S, O, S, Space, S, O, S])
         );
     }
@@ -307,7 +302,7 @@ mod tests {
     #[test]
     fn test_string_to_morse_values_numbers() {
         assert_eq!(
-            string_to_morse_values("123 456"),
+            string_to_values("123 456"),
             Ok(vec![One, Two, Three, Space, Four, Five, Six])
         );
     }
@@ -315,10 +310,8 @@ mod tests {
     #[test]
     fn test_string_to_morse_values_error() {
         assert_eq!(
-            string_to_morse_values("SoS£"),
-            Err(led::LedError::MorseParseError(
-                "Character not allowed: £".to_string()
-            ))
+            string_to_values("SoS£"),
+            Err("Character not allowed: £".to_string())
         );
     }
 }

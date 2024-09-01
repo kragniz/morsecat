@@ -27,9 +27,9 @@ fn main() {
 
     let message = args.clone().split_off(2).join(" ");
 
-    let values = morse::string_to_morse_values(&message).expect("Error parsing message");
-    let elements = morse::morse_values_to_elements(values);
-    let signals = morse::morse_elements_to_signals(elements);
+    let values = morse::string_to_values(&message).expect("Error parsing message");
+    let elements = morse::values_to_elements(values);
+    let signals = morse::elements_to_signals(elements);
 
     for signal in signals {
         let (on, duration) = match signal {

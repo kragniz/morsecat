@@ -8,7 +8,6 @@ pub type Result<T> = std::result::Result<T, LedError>;
 pub enum LedError {
     IoError(()),
     ParseIntError(std::num::ParseIntError),
-    MorseParseError(String),
 }
 
 impl From<io::Error> for LedError {
