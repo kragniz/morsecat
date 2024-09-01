@@ -141,6 +141,16 @@ enum MorseValue {
     X,
     Y,
     Z,
+    Zero,
+    One,
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
 }
 
 impl MorseValue {
@@ -173,6 +183,16 @@ impl MorseValue {
             'X' => Ok(X),
             'Y' => Ok(Y),
             'Z' => Ok(Z),
+            '0' => Ok(Zero),
+            '1' => Ok(One),
+            '2' => Ok(Two),
+            '3' => Ok(Three),
+            '4' => Ok(Four),
+            '5' => Ok(Five),
+            '6' => Ok(Six),
+            '7' => Ok(Seven),
+            '8' => Ok(Eight),
+            '9' => Ok(Nine),
             _ => Err(LedError::MorseParseError(format!(
                 "Character not allowed: {}",
                 c
@@ -209,6 +229,16 @@ impl MorseValue {
             X => vec![Dash, Dot, Dot, Dash],
             Y => vec![Dash, Dot, Dash, Dash],
             Z => vec![Dash, Dash, Dot, Dot],
+            Zero => vec![Dash, Dash, Dash, Dash, Dash],
+            One => vec![Dot, Dash, Dash, Dash, Dash],
+            Two => vec![Dot, Dot, Dash, Dash, Dash],
+            Three => vec![Dot, Dot, Dot, Dash, Dash],
+            Four => vec![Dot, Dot, Dot, Dot, Dash],
+            Five => vec![Dot, Dot, Dot, Dot, Dot],
+            Six => vec![Dash, Dot, Dot, Dot, Dot],
+            Seven => vec![Dash, Dash, Dot, Dot, Dot],
+            Eight => vec![Dash, Dash, Dash, Dot, Dot],
+            Nine => vec![Dash, Dash, Dash, Dash, Dot],
         };
         let len = elements.len() * 2 - 1;
         elements
@@ -394,6 +424,14 @@ mod tests {
         assert_eq!(
             string_to_morse_values("sos sos"),
             Ok(vec![S, O, S, Space, S, O, S])
+        );
+    }
+
+    #[test]
+    fn test_string_to_morse_values_numbers() {
+        assert_eq!(
+            string_to_morse_values("123 456"),
+            Ok(vec![One, Two, Three, Space, Four, Five, Six])
         );
     }
 
