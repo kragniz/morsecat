@@ -8,15 +8,16 @@ use MorseValue::*;
 
 type Result<T> = std::result::Result<T, LedError>;
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 enum LedError {
-    IoError(io::Error),
+    IoError(()),
     ParseIntError(std::num::ParseIntError),
+    MorseParseError(String),
 }
 
 impl From<io::Error> for LedError {
-    fn from(error: io::Error) -> Self {
-        LedError::IoError(error)
+    fn from(_error: io::Error) -> Self {
+        LedError::IoError(())
     }
 }
 
@@ -143,6 +144,42 @@ enum MorseValue {
 }
 
 impl MorseValue {
+    fn from(c: char) -> Result<Self> {
+        match c.to_ascii_uppercase() {
+            ' ' => Ok(Space),
+            'A' => Ok(A),
+            'B' => Ok(B),
+            'C' => Ok(C),
+            'D' => Ok(D),
+            'E' => Ok(E),
+            'F' => Ok(F),
+            'G' => Ok(G),
+            'H' => Ok(H),
+            'I' => Ok(I),
+            'J' => Ok(J),
+            'K' => Ok(K),
+            'L' => Ok(L),
+            'M' => Ok(M),
+            'N' => Ok(N),
+            'O' => Ok(O),
+            'P' => Ok(P),
+            'Q' => Ok(Q),
+            'R' => Ok(R),
+            'S' => Ok(S),
+            'T' => Ok(T),
+            'U' => Ok(U),
+            'V' => Ok(V),
+            'W' => Ok(W),
+            'X' => Ok(X),
+            'Y' => Ok(Y),
+            'Z' => Ok(Z),
+            _ => Err(LedError::MorseParseError(format!(
+                "Character not allowed: {}",
+                c
+            ))),
+        }
+    }
+
     fn to_morse_elements(&self) -> Vec<MorseElement> {
         let elements = match self {
             Space => vec![WordGap],
@@ -220,8 +257,12 @@ fn morse_elements_to_signals(elements: Vec<MorseElement>) -> Vec<MorseSignal> {
         }
     }
     signals.push(current_signal);
-    signals.push(Off(1));
+    signals.push(Off(7));
     signals
+}
+
+fn string_to_morse_values(s: &str) -> Result<Vec<MorseValue>> {
+    s.chars().map(MorseValue::from).collect()
 }
 
 fn main() {
@@ -246,11 +287,17 @@ fn main() {
 
     let led = Led::new(led_name).expect("Error creating Led");
 
-    let mut value = false;
-    loop {
-        led.set_value(value).expect("Error setting brightness");
-        value = !value;
-        std::thread::sleep(std::time::Duration::from_millis(100));
+    let values = string_to_morse_values("SOS").expect("Error parsing message");
+    let elements = morse_values_to_elements(values);
+    let signals = morse_elements_to_signals(elements);
+
+    for signal in signals {
+        let (on, duration) = match signal {
+            On(d) => (true, d),
+            Off(d) => (false, d),
+        };
+        led.set_value(on).expect("Error setting brightness");
+        std::thread::sleep(std::time::Duration::from_millis(duration * 300));
     }
 }
 
@@ -301,7 +348,7 @@ mod tests {
     fn test_morse_elements_to_signals() {
         assert_eq!(
             morse_elements_to_signals(vec![Dot, Gap, Dash]),
-            vec![On(1), Off(1), On(3), Off(1)]
+            vec![On(1), Off(1), On(3), Off(7)]
         );
     }
 
@@ -309,7 +356,7 @@ mod tests {
     fn test_morse_elements_to_signals_compact() {
         assert_eq!(
             morse_elements_to_signals(vec![Dot, LetterGap, WordGap, LetterGap, Dash]),
-            vec![On(1), Off(7), On(3), Off(1)]
+            vec![On(1), Off(7), On(3), Off(7)]
         );
     }
 
@@ -332,8 +379,31 @@ mod tests {
                 Off(7),
                 On(1), Off(1), On(1), Off(1), On(1), Off(1), On(1), Off(3),
                 On(1), Off(1), On(1),
-                Off(1),
+                Off(7),
             ]
+        );
+    }
+
+    #[test]
+    fn test_string_to_morse_values() {
+        assert_eq!(string_to_morse_values("SOS"), Ok(vec![S, O, S]));
+    }
+
+    #[test]
+    fn test_string_to_morse_values_lower() {
+        assert_eq!(
+            string_to_morse_values("sos sos"),
+            Ok(vec![S, O, S, Space, S, O, S])
+        );
+    }
+
+    #[test]
+    fn test_string_to_morse_values_error() {
+        assert_eq!(
+            string_to_morse_values("SoS£"),
+            Err(LedError::MorseParseError(
+                "Character not allowed: £".to_string()
+            ))
         );
     }
 }
