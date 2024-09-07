@@ -30,7 +30,7 @@ pub struct Led {
 
 impl Led {
     pub fn new(name: &str) -> Result<Led> {
-        let base = Path::new("/sys/class/leds/");
+        let base = Path::new("/sys/class/");
 
         let led_dir = base.join(name);
         let brightness_path = led_dir.join("brightness");
@@ -66,12 +66,16 @@ impl Led {
 
 pub fn get_led_names() -> Result<Vec<String>> {
     let mut result = Vec::new();
-    let paths = fs::read_dir("/sys/class/leds/")?;
-    for path in paths {
-        let path = path?.file_name();
-        let path_str = path.to_str().unwrap();
-        result.push(path_str.to_owned());
+
+    for class in ["leds", "backlight"] {
+        let paths = fs::read_dir(Path::new("/sys/class/").join(class))?;
+        for path in paths {
+            let path = Path::new(class).join(path?.file_name());
+            let path_str = path.to_str().unwrap();
+            result.push(path_str.to_owned());
+        }
     }
+
     result.sort();
     Ok(result)
 }
