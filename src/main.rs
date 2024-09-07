@@ -30,13 +30,20 @@ fn show_message(message: &str, led: &led::Led, unit_len: u64) {
     }
 }
 
+fn show_usage(args: &Vec<String>) -> ! {
+    eprintln!(
+        "Usage: {} <led_name> <dot length in milliseconds, default 120>\n",
+        args.first().unwrap()
+    );
+    led::print_leds_available().expect("Error listing leds");
+    std::process::exit(1)
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
-        eprintln!("Usage: {} <led_name> <dot length in milliseconds, default 120>\n", args.first().unwrap());
-        led::print_leds_available().expect("Error listing leds");
-        std::process::exit(1);
+        show_usage(&args);
     }
 
     let led_name = args.get(1).unwrap();
@@ -46,14 +53,19 @@ fn main() {
         .contains(led_name)
     {
         eprintln!("Error: led {} not found\n", led_name);
-        led::print_leds_available().expect("Error listing leds");
-        std::process::exit(1);
+        show_usage(&args);
     }
 
     let led = led::Led::new(led_name).expect("Error creating Led");
 
     let unit_len = match args.get(2) {
-        Some(unit_len) => unit_len.parse::<u64>().expect("Error parsing unit length"),
+        Some(unit_len) => match unit_len.parse::<u64>() {
+            Ok(unit_len) => unit_len,
+            Err(_) => {
+                eprintln!("Error: dot length must be a number\n");
+                show_usage(&args);
+            }
+        },
         None => 120,
     };
 
