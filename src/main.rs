@@ -5,7 +5,7 @@ use std::io::{stdin, BufRead};
 
 use morse::MorseSignal;
 
-fn show_message(message: &str, led: &led::Led) {
+fn show_message(message: &str, led: &led::Led, unit_len: u64) {
     let values = morse::string_to_values(message);
     let elements = morse::values_to_elements(values);
 
@@ -26,15 +26,15 @@ fn show_message(message: &str, led: &led::Led) {
             MorseSignal::Off(d) => (false, d),
         };
         led.set_value(on).expect("Error setting brightness");
-        std::thread::sleep(std::time::Duration::from_millis(duration * 120));
+        std::thread::sleep(std::time::Duration::from_millis(duration * unit_len));
     }
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    if args.len() < 3 {
-        eprintln!("Usage: {} <led_name>\n", args.first().unwrap());
+    if args.len() < 2 {
+        eprintln!("Usage: {} <led_name> <dot length in milliseconds, default 120>\n", args.first().unwrap());
         led::print_leds_available().expect("Error listing leds");
         std::process::exit(1);
     }
@@ -52,6 +52,11 @@ fn main() {
 
     let led = led::Led::new(led_name).expect("Error creating Led");
 
+    let unit_len = match args.get(2) {
+        Some(unit_len) => unit_len.parse::<u64>().expect("Error parsing unit length"),
+        None => 120,
+    };
+
     let mut stdin_handle = stdin().lock();
     let mut buf = String::new();
 
@@ -63,7 +68,7 @@ fn main() {
                 break;
             }
             Ok(_) => {
-                show_message(buf.trim(), &led);
+                show_message(buf.trim(), &led, unit_len);
             }
             Err(s) => {
                 println!("Error getting line: {:?}", s);
