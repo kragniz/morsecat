@@ -245,8 +245,8 @@ pub fn elements_to_signals(elements: Vec<MorseElement>) -> Vec<MorseSignal> {
     signals
 }
 
-pub fn string_to_values(s: &str) -> Result<Vec<MorseValue>, String> {
-    s.chars().map(MorseValue::from).collect()
+pub fn string_to_values(s: &str) -> Vec<MorseValue> {
+    s.chars().filter_map(|c| MorseValue::from(c).ok()).collect()
 }
 
 #[cfg(test)]
@@ -334,22 +334,19 @@ mod tests {
 
     #[test]
     fn test_string_to_morse_values() {
-        assert_eq!(string_to_values("SOS"), Ok(vec![S, O, S]));
+        assert_eq!(string_to_values("SOS"), vec![S, O, S]);
     }
 
     #[test]
     fn test_string_to_morse_values_lower() {
-        assert_eq!(
-            string_to_values("sos sos"),
-            Ok(vec![S, O, S, Space, S, O, S])
-        );
+        assert_eq!(string_to_values("sos sos"), vec![S, O, S, Space, S, O, S]);
     }
 
     #[test]
     fn test_string_to_morse_values_numbers() {
         assert_eq!(
             string_to_values("123 456"),
-            Ok(vec![One, Two, Three, Space, Four, Five, Six])
+            vec![One, Two, Three, Space, Four, Five, Six]
         );
     }
 
@@ -357,7 +354,7 @@ mod tests {
     fn test_string_to_morse_symbols() {
         assert_eq!(
             string_to_values("hi('@')"),
-            Ok(vec![
+            vec![
                 H,
                 I,
                 OpenParenthesis,
@@ -365,15 +362,20 @@ mod tests {
                 At,
                 Apostrophe,
                 CloseParenthesis
-            ])
+            ]
+        );
+    }
+
+    #[test]
+    fn test_strict_string_to_morse_values_error() {
+        assert_eq!(
+            MorseValue::from('£'),
+            Err("Character not allowed: £".to_string())
         );
     }
 
     #[test]
     fn test_string_to_morse_values_error() {
-        assert_eq!(
-            string_to_values("SoS£"),
-            Err("Character not allowed: £".to_string())
-        );
+        assert_eq!(string_to_values("SoS£"), vec![S, O, S],);
     }
 }

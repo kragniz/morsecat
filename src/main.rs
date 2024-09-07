@@ -6,7 +6,7 @@ use std::io::{stdin, BufRead};
 use morse::MorseSignal;
 
 fn show_message(message: &str, led: &led::Led) {
-    let values = morse::string_to_values(message).expect("Error parsing message");
+    let values = morse::string_to_values(message);
     let elements = morse::values_to_elements(values);
 
     println!(
