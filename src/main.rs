@@ -25,12 +25,29 @@ fn show_message(message: &str, led: &led::Led, unit_len: u64) {
             MorseSignal::On(d) => (true, d),
             MorseSignal::Off(d) => (false, d),
         };
-        led.set_value(on).expect("Error setting brightness");
+        match led.set_value(on) {
+            Ok(_) => {}
+            Err(led::LedError::IoError(error)) => {
+                match error.kind() {
+                    std::io::ErrorKind::PermissionDenied => {
+                        eprintln!("Permission denied. Run as root");
+                    }
+                    _ => {
+                        eprintln!("Error setting led value: {:?}", error);
+                    }
+                }
+                std::process::exit(1);
+            }
+            Err(e) => {
+                eprintln!("Error setting led value: {:?}", e);
+                std::process::exit(1);
+            }
+        }
         std::thread::sleep(std::time::Duration::from_millis(duration * unit_len));
     }
 }
 
-fn show_usage(args: &Vec<String>) -> ! {
+fn show_usage(args: &[String]) -> ! {
     eprintln!(
         "Usage: {} <led_name> <dot length in milliseconds, default 120>\n",
         args.first().unwrap()

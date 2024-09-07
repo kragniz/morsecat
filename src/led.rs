@@ -4,21 +4,21 @@ use std::path::{Path, PathBuf};
 
 pub type Result<T> = std::result::Result<T, LedError>;
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub enum LedError {
-    IoError(()),
-    ParseIntError(std::num::ParseIntError),
+    IoError(std::io::Error),
+    ParseIntError(()),
 }
 
 impl From<io::Error> for LedError {
-    fn from(_error: io::Error) -> Self {
-        LedError::IoError(())
+    fn from(error: io::Error) -> Self {
+        LedError::IoError(error)
     }
 }
 
 impl From<std::num::ParseIntError> for LedError {
-    fn from(error: std::num::ParseIntError) -> Self {
-        LedError::ParseIntError(error)
+    fn from(_error: std::num::ParseIntError) -> Self {
+        LedError::ParseIntError(())
     }
 }
 
