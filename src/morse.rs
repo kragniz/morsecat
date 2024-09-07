@@ -18,8 +18,21 @@ impl MorseElement {
             Dash => On(3),
             Gap => Off(1),
             LetterGap => Off(3),
-            WordGap => Off(1),
+            WordGap => Off(1), // Every element is separated by a Gap, so [Gap, WordGap, Gap] should sum to 7
         }
+    }
+}
+
+impl core::fmt::Display for MorseElement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Dot => "•",
+            Dash => "——",
+            Gap => " ",
+            LetterGap => "   ",
+            WordGap => " ",
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -78,7 +91,7 @@ pub enum MorseValue {
 impl MorseValue {
     pub fn from(c: char) -> Result<Self, String> {
         match c.to_ascii_uppercase() {
-            ' ' => Ok(Space),
+            ' ' | '\n' => Ok(Space),
             'A' => Ok(A),
             'B' => Ok(B),
             'C' => Ok(C),

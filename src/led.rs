@@ -36,8 +36,6 @@ impl Led {
         let brightness_path = led_dir.join("brightness");
         let max_brightness_path = led_dir.join("max_brightness");
 
-        println!("Using {}", led_dir.display());
-
         let mut led = Led {
             max_brightness: 0,
             brightness_path,
